@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>✨ The Sales Basket Organisation | Diwali Special</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,900&family=Poppins:wght@300;400;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Reset & Base */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #03151a;
+            font-family: 'Poppins', sans-serif;
+            cursor: crosshair;
+            touch-action: none;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameCanvas,
+        #confettiCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            transition: background-color 0.5s ease;
+        }
+
+        #gameCanvas {
+            z-index: 1;
+        }
+
+        #confettiCanvas {
+            z-index: 15;
+        }
+
+        /* Black Screen Overlay for Finale */
+        #gameCanvas.blackout {
+            background-color: #000 !important;
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Top Brand Logo */
+        .brand-section {
+            pointer-events: auto;
+            margin-top: 10px;
+            animation: fadeInDown 1s ease-out;
+            z-index: 20;
+            text-align: center;
+        }
+
+        .logo-img {
+            width: clamp(200px, 60vw, 280px);
+            max-width: 100%;
+            filter: drop-shadow(0 0 20px rgba(243, 108, 33, 1)) drop-shadow(0 0 40px rgba(0, 188, 212, 0.6));
+            animation: pulseLogo 3s infinite alternate;
+            transition: transform 0.3s ease;
+        }
+
+        @keyframes pulseLogo {
+            0% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 15px rgba(243, 108, 33, 0.8));
+            }
+
+            100% {
+                transform: scale(1.03);
+                filter: drop-shadow(0 0 30px rgba(255, 215, 0, 1));
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Score HUD */
+        .hud {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(4, 21, 26, 0.85);
+            border: 2px solid rgba(243, 108, 33, 0.6);
+            padding: 10px 18px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+            font-weight: 600;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(243, 108, 33, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(-100px);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto;
+            z-index: 20;
+        }
+
+        .hud.active {
+            transform: translateY(0);
+        }
+
+        .hud i {
+            color: #ffd700;
+            font-size: clamp(1.1rem, 4vw, 1.4rem);
+        }
+
+        /* Main Play Container (Input + Button) */
+        .main-play-container {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            pointer-events: auto;
+            transition: all 0.4s ease;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .main-play-container.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 2px solid rgba(243, 108, 33, 0.5);
+            background: rgba(4, 21, 26, 0.9);
+            color: #fff;
+            font-size: clamp(1rem, 3.5vw, 1.1rem);
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+            transition: all 0.3s;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .name-input:focus {
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .name-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .play-btn {
+            background: linear-gradient(180deg, #ff8c42 0%, #f36c21 100%);
+            color: #000;
+            border: none;
+            padding: 16px 20px;
+            font-size: clamp(1rem, 3.5vw, 1.2rem);
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(243, 108, 33, 0.6), inset 0 3px 0 rgba(255, 255, 255, 0.4);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: pulseBtn 2s infinite alternate;
+            width: 100%;
+        }
+
+        @keyframes pulseBtn {
+            0% {
+                box-shadow: 0 10px 30px rgba(243, 108, 33, 0.6);
+            }
+
+            100% {
+                box-shadow: 0 15px 50px rgba(255, 215, 0, 0.9);
+                transform: scale(1.02);
+            }
+        }
+
+        .play-btn:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 20px 40px rgba(243, 108, 33, 0.8), inset 0 3px 0 rgba(255, 255, 255, 0.6);
+        }
+
+        /* Universal UI Modal */
+        .ui-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(10, 32, 40, 0.95);
+            padding: clamp(20px, 5vw, 40px);
+            border-radius: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #f36c21;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), inset 0 0 40px rgba(243, 108, 33, 0.2);
+            backdrop-filter: blur(20px);
+            text-align: center;
+            width: 90%;
+            max-width: 550px;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: auto;
+        }
+
+        .ui-modal.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .ui-modal h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.8rem, 6vw, 2.8rem);
+            color: #fff;
+            margin: 0 0 15px 0;
+            text-shadow: 0 4px 20px rgba(243, 108, 33, 0.6);
+        }
+
+        .ui-modal p {
+            color: #e0f2f1;
+            font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        /* Personalized Highlighted Name */
+        .personalized-name {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 8vw, 3.5rem);
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 20px #ffd700, 0 0 40px #f36c21;
+            display: block;
+            margin: 10px 0;
+            animation: textPop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            word-wrap: break-word;
+        }
+
+        .highlight-diwali {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.8rem, 6vw, 2.5rem);
+            font-weight: 900;
+            margin: 10px 0;
+            line-height: 1.2;
+            color: #00e5ff;
+            text-shadow: 0 0 20px #00e5ff, 0 0 40px #00bcd4, 2px 2px 0px #005b6e;
+        }
+
+        @keyframes textPop {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            70% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Instructions List */
+        .inst-list {
+            text-align: left;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 4px solid #ffd700;
+        }
+
+        .inst-list div {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            color: #fff;
+            font-size: clamp(0.9rem, 3vw, 1.05rem);
+        }
+
+        .inst-list i {
+            color: #f36c21;
+            width: 30px;
+            font-size: clamp(1.1rem, 3.5vw, 1.3rem);
+        }
+
+        /* Surprise Box */
+        .surprise-box {
+            width: clamp(100px, 25vw, 140px);
+            height: clamp(100px, 25vw, 140px);
+            margin: 0 auto 20px auto;
+            background: linear-gradient(135deg, #00bcd4, #005b6e);
+            border-radius: 24px;
+            border: 4px solid #ffd700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 50px rgba(243, 108, 33, 0.8);
+            animation: shakeBox 2s infinite;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .surprise-box:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 70px rgba(255, 215, 0, 1);
+        }
+
+        .surprise-box i {
+            font-size: clamp(3rem, 10vw, 4.5rem);
+            color: #ffd700;
+            filter: drop-shadow(0 0 10px #ff8c42);
+        }
+
+        @keyframes shakeBox {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            10% {
+                transform: rotate(-8deg);
+            }
+
+            20% {
+                transform: rotate(8deg);
+            }
+
+            30% {
+                transform: rotate(-8deg);
+            }
+
+            40% {
+                transform: rotate(8deg);
+            }
+
+            50% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+    <canvas id="confettiCanvas"></canvas>
+
+    <div class="ui-layer">
+        <div class="brand-section">
+            <img src="https://drive.google.com/thumbnail?id=1PeONCJaeT1-XOVoqZNKqdqMTdGCOivbi&sz=w1000"
+                alt="Sales Basket Organisation" class="logo-img">
+        </div>
+
+        <div class="hud" id="scoreHud">
+            <i class="fas fa-gift"></i> Gifts: <span id="scoreVal" style="color: #ffd700;">0</span> / 15
+            <span style="margin-left: 10px; border-left: 1px solid #555; padding-left: 10px; color: #ff2a2a;">
+                <i class="fas fa-heart"></i> <span id="strikeVal">3</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Main Play Container with Name Input -->
+    <div class="main-play-container" id="mainPlayContainer">
+        <input type="text" id="playerName" class="name-input" placeholder="Enter Your Name"
+            onkeypress="handleKeyPress(event)">
+        <button class="play-btn" id="mainPlayBtn">Diwali Gift Chahiye to Khelo 🎁</button>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div class="ui-modal" id="instructionsModal">
+        <h1>How to Play</h1>
+        <div class="inst-list">
+            <div><i class="fas fa-mouse-pointer"></i> Move Mouse / Finger to catch Gifts.</div>
+            <div><i class="fas fa-bomb"></i> Avoid red Crackers! You have <b>3 Lives</b>.</div>
+            <div><i class="fas fa-star"></i> Score 15 Gifts to unlock your Surprise.</div>
+            <div><i class="fas fa-fire"></i> Click anywhere for Fireworks!</div>
+        </div>
+        <button class="play-btn" id="startGameBtn">Let's Play!</button>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="ui-modal" id="gameOverModal">
+        <h1 style="color: #ff2a2a;">Game Over!</h1>
+        <p>You caught 3 bombs and lost all your lives. The Diwali surprise is still locked!</p>
+        <button class="play-btn" onclick="resetGame()">Try Again</button>
+    </div>
+
+    <!-- Surprise Modal (Personalized Wish) -->
+    <div class="ui-modal" id="surpriseModal">
+        <h1
+            style="color: #ff8c42; font-size: clamp(1.2rem, 4vw, 1.5rem); text-transform: uppercase; letter-spacing: 2px;">
+            Hello</h1>
+
+
+        <div class="personalized-name" id="displayWinnerName">Name Ji!</div>
+        <div class="highlight-diwali">HAPPY DIWALI</div>
+
+        <p style="font-weight: 500; color: orange;"><strong style="color: #00bcd4;">The Sales Basket
+                Organisation</strong> ki taraf se aapko aur aapke pure parivar ko Diwali ki dher saari shubhkamayein.
+            <br><br> Aapka jeevan hamesha aise hi jagmagata rahe! ✨</p>
+
+        <div class="surprise-box" id="surpriseBox" onclick="openSurprise()">
+            <i class="fas fa-gift"></i>
+        </div>
+        <p style="color: #ffd700; font-weight: 700; margin-bottom: 0; animation: pulseLogo 1s infinite alternate;">Tap
+            to Open Your Diwali Surprise!</p>
+    </div>
+
+    <!-- Funny Message Modal -->
+    <div class="ui-modal" id="funnyModal">
+        <h1 style="color: #00bcd4;">Your Surprise!</h1>
+        <p id="funnyText"
+            style="font-size: clamp(1.1rem, 4vw, 1.3rem); font-weight: 600; color: #fff; margin: 20px 0; line-height: 1.8;">
+        </p>
+        <button class="play-btn" id="thankYouBtn">Click Me!</button>
+    </div>
+
+    <script>
+        // --- 1. REALISTIC AUDIO ENGINE ---
+        let audioCtx;
+        const MASTER_VOLUME = 0.25;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playRealisticCracker() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const bufferSize = audioCtx.sampleRate * 0.15;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 2000 + Math.random() * 3000;
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(MASTER_VOLUME * 1.5, now + 0.005);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1 + Math.random() * 0.1);
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start(now);
+        }
+
+        function playRealisticBoom() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+
+            const osc = audioCtx.createOscillator();
+            const oscGain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(120, now);
+            osc.frequency.exponentialRampToValueAtTime(0.01, now + 1.5);
+            oscGain.gain.setValueAtTime(0, now);
+            oscGain.gain.linearRampToValueAtTime(MASTER_VOLUME * 3, now + 0.02);
+            oscGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+            osc.connect(oscGain);
+            oscGain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 1.5);
+
+            const bufferSize = audioCtx.sampleRate * 0.8;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1000, now);
+            filter.frequency.exponentialRampToValueAtTime(100, now + 0.8);
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(MASTER_VOLUME * 1.5, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+            noise.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noise.start(now);
+        }
+
+        function playRocketWhistle() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.4);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(MASTER_VOLUME * 0.5, now + 0.1);
+            gain.gain.linearRampToValueAtTime(0, now + 0.4);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.4);
+        }
+
+        // --- 2. FIREWORKS ENGINE ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const cCtx = confettiCanvas.getContext('2d');
+
+        let width, height;
+        let isGameActive = false;
+        let score = 0;
+        let strikes = 3;
+        let playerName = "Guest"; // Default name
+        const targetScore = 15;
+        const colors = ['#f36c21', '#ffd700', '#00bcd4', '#ffffff', '#ff8c42'];
+
+        const funnyMessages = [
+            "Aaj toh aapki performance dekhkar lag raha hai appraisal mein extra zero lagana padega! 🤣 Happy Diwali! 🪔",
+            "Itna focus agar meetings mein hota, toh meetings 5 minute mein khatam ho jaati! 😉 Happy Diwali! 🪔",
+            "Aapki energy dekhkar lagta hai Monday bhi aapse motivation leta hoga! 😂 Happy Diwali! 🪔",
+            "Company ko aise hi energetic log chahiye… bas Monday ko bhi yahi enthusiasm lekar aana! 🤭 Happy Diwali! 🪔",
+            "Aapki energy dekhkar lagta hai Monday bhi aapse motivation leta hoga! 😂 Happy Diwali! 🪔",
+        ];
+
+        function resize() {
+            width = canvas.width = confettiCanvas.width = window.innerWidth;
+            height = canvas.height = confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const particles = [];
+        const rockets = [];
+        const gifts = [];
+
+        class Rocket {
+            constructor(x, y, withSound = false) {
+                this.x = x; this.y = y;
+                this.tx = x + (Math.random() - 0.5) * 100;
+                this.ty = y - 150 - Math.random() * 200;
+                this.speed = 10 + Math.random() * 4;
+                this.angle = Math.atan2(this.ty - this.y, this.tx - this.x);
+                this.vx = Math.cos(this.angle) * this.speed;
+                this.vy = Math.sin(this.angle) * this.speed;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.history = [];
+                this.withSound = withSound;
+            }
+            update() {
+                this.history.push({ x: this.x, y: this.y });
+                if (this.history.length > 5) this.history.shift();
+                this.x += this.vx; this.y += this.vy;
+                if (this.y < this.ty || this.vy >= 0) { this.explode(); return false; }
+                return true;
+            }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff'; ctx.fill();
+                ctx.beginPath(); ctx.moveTo(this.history[0].x, this.history[0].y);
+                for (let i = 1; i < this.history.length; i++) { ctx.lineTo(this.history[i].x, this.history[i].y); }
+                ctx.strokeStyle = this.color; ctx.lineWidth = 2.5; ctx.stroke();
+            }
+            explode() {
+                let pCount = 60 + Math.random() * 40;
+                for (let i = 0; i < pCount; i++) {
+                    let angle = Math.random() * Math.PI * 2;
+                    let speed = Math.random() * 10 + 2;
+                    particles.push(new Particle(this.x, this.y, angle, speed, this.color));
+                }
+                particles.push(new Particle(this.x, this.y, 0, 0, '#ffffff', 40, true));
+
+                if (this.withSound && audioCtx) {
+                    if (Math.random() > 0.7) {
+                        playRealisticBoom();
+                    } else {
+                        playRealisticCracker();
+                    }
+                }
+            }
+        }
+
+        class Particle {
+            constructor(x, y, angle, speed, color, size = 2.5, isFlash = false) {
+                this.x = x; this.y = y;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.color = color; this.size = size; this.life = 1.0;
+                this.decay = isFlash ? 0.1 : 0.015 + Math.random() * 0.02;
+                this.gravity = 0.06; this.isFlash = isFlash;
+            }
+            update() {
+                this.vx *= 0.96; this.vy *= 0.96; this.vy += this.gravity;
+                this.x += this.vx; this.y += this.vy; this.life -= this.decay;
+                return this.life > 0;
+            }
+            draw() {
+                ctx.globalAlpha = this.life; ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
+                ctx.fill(); ctx.globalAlpha = 1;
+            }
+        }
+
+        // --- Basket ---
+        const basket = { x: width / 2, y: height - 80, width: 140, height: 65, targetX: width / 2, speed: 0.3 };
+
+        window.addEventListener('mousemove', (e) => { basket.targetX = e.clientX; });
+        window.addEventListener('touchmove', (e) => { basket.targetX = e.touches[0].clientX; e.preventDefault(); }, { passive: false });
+
+        function drawBasket() {
+            ctx.save(); ctx.translate(basket.x, basket.y);
+            ctx.shadowColor = '#f36c21'; ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.moveTo(-basket.width / 2, 0); ctx.lineTo(basket.width / 2, 0);
+            ctx.lineTo(basket.width / 2 - 25, basket.height); ctx.lineTo(-basket.width / 2 + 25, basket.height);
+            ctx.closePath();
+            let gradient = ctx.createLinearGradient(-basket.width / 2, 0, basket.width / 2, 0);
+            gradient.addColorStop(0, '#003d4a'); gradient.addColorStop(0.5, '#007a93'); gradient.addColorStop(1, '#003d4a');
+            ctx.fillStyle = gradient; ctx.fill();
+            ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3; ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(0, 0, basket.width / 2, 12, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#f36c21'; ctx.fill();
+            ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 4; ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Gifts & Bombs ---
+        function spawnGift() {
+            if (!isGameActive) return;
+            const isBomb = Math.random() > 0.75;
+            gifts.push({
+                x: Math.random() * (width - 100) + 50, y: -50,
+                speed: 3.5 + Math.random() * 3, type: isBomb ? 'bomb' : 'gift',
+                color: colors[Math.floor(Math.random() * colors.length)],
+                radius: 22, angle: Math.random() * Math.PI, rotSpeed: (Math.random() - 0.5) * 0.05
+            });
+        }
+
+        setInterval(() => { if (isGameActive) spawnGift(); }, 700);
+
+        function drawGift(g) {
+            ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.angle);
+            if (g.type === 'gift') {
+                ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 15; ctx.shadowOffsetY = 5;
+                ctx.fillStyle = g.color; ctx.fillRect(-18, -18, 36, 36);
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(-18, -18, 36, 36);
+                ctx.beginPath(); ctx.moveTo(-18, 0); ctx.lineTo(18, 0); ctx.moveTo(0, -18); ctx.lineTo(0, 18);
+                ctx.strokeStyle = '#ffd700'; ctx.stroke();
+            } else {
+                ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 20;
+                ctx.fillStyle = '#ff2a2a'; ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(12, -12, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(12, -12); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // --- Game Loop ---
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(3, 21, 26, 1)';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            for (let i = 0; i < 20; i++) {
+                ctx.beginPath(); ctx.arc(Math.random() * width, Math.random() * height, 1.5, 0, Math.PI * 2); ctx.fill();
+            }
+
+            for (let i = rockets.length - 1; i >= 0; i--) {
+                if (!rockets[i].update()) rockets.splice(i, 1); else rockets[i].draw();
+            }
+            for (let i = particles.length - 1; i >= 0; i--) {
+                if (!particles[i].update()) particles.splice(i, 1); else particles[i].draw();
+            }
+
+            basket.x += (basket.targetX - basket.x) * basket.speed;
+            basket.x = Math.max(basket.width / 2, Math.min(width - basket.width / 2, basket.x));
+
+            if (isGameActive) {
+                drawBasket();
+                for (let i = gifts.length - 1; i >= 0; i--) {
+                    let g = gifts[i]; g.y += g.speed; g.angle += g.rotSpeed;
+                    drawGift(g);
+
+                    let basketTop = basket.y - 12;
+                    let basketLeft = basket.x - basket.width / 2 + 15;
+                    let basketRight = basket.x + basket.width / 2 - 15;
+
+                    if (g.y + g.radius > basketTop && g.y - g.radius < basketTop + 30) {
+                        if (g.x > basketLeft && g.x < basketRight) {
+                            if (g.type === 'gift') {
+                                score++; document.getElementById('scoreVal').innerText = score;
+                                createBurst(g.x, g.y, '#ffd700');
+                                if (score >= targetScore) endGame(true);
+                            } else {
+                                strikes--; document.getElementById('strikeVal').innerText = strikes;
+                                createBurst(g.x, g.y, '#ff2a2a');
+
+                                canvas.style.transform = 'translate(10px, 10px)';
+                                setTimeout(() => canvas.style.transform = 'translate(-10px, -10px)', 50);
+                                setTimeout(() => canvas.style.transform = 'translate(0, 0)', 100);
+
+                                if (strikes <= 0) endGame(false);
+                            }
+                            gifts.splice(i, 1); continue;
+                        }
+                    }
+                    if (g.y > height + 50) gifts.splice(i, 1);
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function createBurst(x, y, color) {
+            for (let i = 0; i < 25; i++) {
+                let angle = Math.random() * Math.PI * 2; let speed = Math.random() * 6 + 1;
+                particles.push(new Particle(x, y, angle, speed, color));
+            }
+        }
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.ui-modal') || e.target.closest('.hud') || e.target.closest('.main-play-container')) return;
+            rockets.push(new Rocket(e.clientX, e.clientY, false));
+        });
+        window.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.ui-modal') || e.target.closest('.hud') || e.target.closest('.main-play-container')) return;
+            rockets.push(new Rocket(e.touches[0].clientX, e.touches[0].clientY, false));
+        });
+
+        // --- Confetti ---
+        const confettis = [];
+        function spawnConfetti() {
+            for (let i = 0; i < 150; i++) {
+                confettis.push({
+                    x: Math.random() * width, y: -10 - Math.random() * 300,
+                    w: 8 + Math.random() * 12, h: 12 + Math.random() * 15,
+                    vx: (Math.random() - 0.5) * 3, vy: 3 + Math.random() * 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    angle: Math.random() * Math.PI, rotSpeed: (Math.random() - 0.5) * 0.2
+                });
+            }
+        }
+        function drawConfetti() {
+            cCtx.clearRect(0, 0, width, height);
+            for (let i = confettis.length - 1; i >= 0; i--) {
+                let c = confettis[i]; c.x += c.vx; c.y += c.vy; c.angle += c.rotSpeed;
+                cCtx.save(); cCtx.translate(c.x, c.y); cCtx.rotate(c.angle); cCtx.fillStyle = c.color;
+                cCtx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h); cCtx.restore();
+                if (c.y > height) confettis.splice(i, 1);
+            }
+            requestAnimationFrame(drawConfetti);
+        }
+        drawConfetti();
+
+        // --- UI & Modal Logic ---
+        const mainPlayContainer = document.getElementById('mainPlayContainer');
+        const playerNameInput = document.getElementById('playerName');
+        const instructionsModal = document.getElementById('instructionsModal');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const surpriseModal = document.getElementById('surpriseModal');
+        const funnyModal = document.getElementById('funnyModal');
+        const scoreHud = document.getElementById('scoreHud');
+
+        // 1. First Screen: Enter Name & Click Button
+        document.getElementById('mainPlayBtn').addEventListener('click', () => {
+            const enteredName = playerNameInput.value.trim();
+            if (enteredName === "") {
+                alert("Please enter your name first to get your personalized Diwali gift! 🎁");
+                playerNameInput.focus();
+                return;
+            }
+
+            // Capitalize first letter
+            playerName = enteredName.charAt(0).toUpperCase() + enteredName.slice(1);
+
+            // Move to instructions
+            mainPlayContainer.classList.add('hidden');
+            instructionsModal.classList.add('show');
+        });
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                document.getElementById('mainPlayBtn').click();
+            }
+        }
+
+        // 2. Instructions -> Start Game
+        document.getElementById('startGameBtn').addEventListener('click', () => {
+            instructionsModal.classList.remove('show');
+            scoreHud.classList.add('active');
+            isGameActive = true;
+            score = 0; strikes = 3;
+            document.getElementById('scoreVal').innerText = score;
+            document.getElementById('strikeVal').innerText = strikes;
+            gifts.length = 0;
+            for (let i = 0; i < 5; i++) { setTimeout(() => { rockets.push(new Rocket(Math.random() * width, height, false)); }, i * 150); }
+        });
+
+        // 3. End Game
+        function endGame(win) {
+            isGameActive = false;
+            scoreHud.classList.remove('active');
+
+            if (win) {
+                // Set the personalized name inside the modal
+                document.getElementById('displayWinnerName').innerText = playerName + " Ji!";
+
+                surpriseModal.classList.add('show');
+                spawnConfetti();
+                let fwCount = 0; let interval = setInterval(() => {
+                    rockets.push(new Rocket(Math.random() * width, height, false));
+                    rockets.push(new Rocket(Math.random() * width, height, false));
+                    fwCount++; if (fwCount > 20) clearInterval(interval);
+                }, 250);
+            } else {
+                gameOverModal.classList.add('show');
+            }
+        }
+
+        // 4. Open Surprise Box
+        function openSurprise() {
+            surpriseModal.classList.remove('show');
+            const funnyText = document.getElementById('funnyText');
+            const randomMsg = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+            funnyText.innerText = randomMsg;
+            funnyModal.classList.add('show');
+
+            spawnConfetti();
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => { rockets.push(new Rocket(Math.random() * width, height, false)); }, i * 100);
+            }
+        }
+
+        // 5. "Thank You!" Button (Triggers Finale with Sound)
+        document.getElementById('thankYouBtn').addEventListener('click', () => {
+            // Init audio on click
+            initAudio();
+
+            // Play initial whistle and boom
+            playRocketWhistle();
+            setTimeout(() => { playRealisticBoom(); }, 400);
+
+            // Hide modal
+            funnyModal.classList.remove('show');
+
+            // Turn background black
+            canvas.classList.add('blackout');
+
+            // Start massive fireworks for 5 seconds with sound
+            let finaleInterval = setInterval(() => {
+                let rocketsToFire = 2 + Math.floor(Math.random() * 3);
+                for (let i = 0; i < rocketsToFire; i++) {
+                    rockets.push(new Rocket(Math.random() * width, height, true));
+                }
+            }, 200);
+
+            // After 5 seconds, reset game to start
+            setTimeout(() => {
+                clearInterval(finaleInterval);
+                canvas.classList.remove('blackout');
+                rockets.length = 0;
+                particles.length = 0;
+
+                resetGame();
+            }, 5000);
+        });
+
+        // 6. Reset Game
+        function resetGame() {
+            gameOverModal.classList.remove('show');
+            surpriseModal.classList.remove('show');
+            funnyModal.classList.remove('show');
+
+            mainPlayContainer.classList.remove('hidden');
+            playerNameInput.value = ""; // clear name input for next player
+            gifts.length = 0; confettis.length = 0; cCtx.clearRect(0, 0, width, height);
+            score = 0; strikes = 3;
+            document.getElementById('scoreVal').innerText = score;
+            document.getElementById('strikeVal').innerText = strikes;
+            isGameActive = false;
+        }
+        window.resetGame = resetGame;
+        window.openSurprise = openSurprise;
+
+        animate();
+    </script>
+</body>
+
+</html>
